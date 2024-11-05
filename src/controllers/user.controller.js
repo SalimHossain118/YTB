@@ -212,5 +212,135 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
   }
 });
+// end of RefreshAccessToken
 
-export { registerUser, userLogin, userLogout, refreshAccessToken };
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+  console.log("Request Body->", req.body);
+
+  const { oldPassword, newPassword } = req.body;
+
+  const currentUser = await User.findById(req.user._id);
+
+  const matchedPassword = await currentUser.isPasswordCorrect(oldPassword);
+
+  // if passwod check old passord
+
+  if (!matchedPassword) {
+    throw new ApiError(400, "Incorrect Password");
+  }
+
+  // save to db
+  currentUser.password = newPassword;
+  await currentUser.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password changed successfully"));
+});
+// end of change password-->
+
+const updateUserAccountDetails = asyncHandler(async (req, res) => {
+  const { fullname, email } = req.body;
+  if (!fullname || !email) {
+    throw new ApiError(400, "All Fiels are Required");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+
+    {
+      $set: {
+        fullname: fullname,
+        email: email,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, " User Details Updated Successfully... "));
+});
+
+// end of UpdateUser Details--->
+
+const updateUserProfilePhoto = asyncHandler(async (req, res) => {
+  const photoLocalPath = req.file?.path;
+
+  if (!photoLocalPath) {
+    throw new ApiError(400, "Image Could not Found");
+  }
+
+  const profilePhoto = await uploadOnCloudinary(photoLocalPath);
+
+  if (!profilePhoto.url) {
+    throw new ApiError(400, "Error While Upload Profile Image");
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        avatar: profilePhoto.url,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, updatedUser, "Profile image updated successfully")
+    );
+});
+
+// end of update User Profile photo--->
+
+const updateUserCoverImage = asyncHandler(async (req, res) => {
+  const localCoverImage = req.file?.path;
+
+  if (!localCoverImage) {
+    throw new ApiError(400, "Image Could not Found");
+  }
+
+  const coverImage = await uploadOnCloudinary(localCoverImage);
+
+  if (!coverImage.url) {
+    throw new ApiError(400, "Error While Upload Cover Image");
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        coverImage: coverImage.url,
+      },
+    },
+    {
+      new: true,
+    }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, updatedUser, "Cover Image Updated Successfully")
+    );
+});
+
+const getCurrentUse = asyncHandler(async (req, res) => {
+  return res.status(200).json(200, req.user);
+});
+// end of getCurrent user
+
+export {
+  registerUser,
+  userLogin,
+  userLogout,
+  refreshAccessToken,
+  changeCurrentPassword,
+  updateUserAccountDetails,
+  updateUserProfilePhoto,
+  updateUserCoverImage,
+  getCurrentUse,
+};
