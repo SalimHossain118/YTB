@@ -333,6 +333,84 @@ const getCurrentUse = asyncHandler(async (req, res) => {
 });
 // end of getCurrent user
 
+const getUserChanelPr = asyncHandler(async (req, res) => {
+  // finding user name at first
+
+  const { username } = req.params;
+
+  if (!username?.trim()) {
+    throw new ApiError(400, "User Name Not Found");
+  }
+
+  const channel = await User.aggregate([
+    // 1st match-->
+    {
+      $match: {
+        username: username?.toLowerCase(),
+      },
+    },
+    {
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "channel",
+        as: "my_subscribers",
+      },
+    },
+    {
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "flowing_To_other",
+      },
+    },
+    // add --
+    {
+      $addFields: {
+        suscribeToMeCount: {
+          $size: "$my_subscribers",
+        },
+        susbribeToOtherChanelByMe: {
+          $size: "$flowing_To_other",
+        },
+
+        isSubcribed: {
+          $cond: {
+            if: {
+              $in: [req.user._id, "$my_subscribers.subscriber"],
+            },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    //--
+    {
+      $project: {
+        fullname: 1,
+        username: 1,
+        email: 1,
+        avatar: 1,
+        coverImage: 1,
+        suscribeToMeCount: 1,
+        susbribeToOtherChanelByMe: 1,
+        isSubcribed: 1,
+      },
+    },
+  ]);
+  // end of aggregration --->
+
+  if (!channel?.length) {
+    throw new ApiError(400, "No Chanel is Exisit.");
+  }
+  return res
+    .status(200)
+    .json(new ApiResponse(200, channel[0], "User Chanel Feched Successfully"));
+});
+// end of chanel --->
+
 export {
   registerUser,
   userLogin,
