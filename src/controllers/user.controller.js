@@ -333,7 +333,7 @@ const getCurrentUse = asyncHandler(async (req, res) => {
 });
 // end of getCurrent user
 
-const getUserChanelPr = asyncHandler(async (req, res) => {
+const getUserChannelProfile = asyncHandler(async (req, res) => {
   // finding user name at first
 
   const { username } = req.params;
@@ -411,6 +411,60 @@ const getUserChanelPr = asyncHandler(async (req, res) => {
 });
 // end of chanel --->
 
+const getWatchHistory = asyncHandler(async (req, res) => {
+  const user = await User.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user._id),
+      },
+    },
+    //end --
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                {
+                  $project: {
+                    fullname: 1,
+                    username: 1,
+                    avatar: 1,
+                  },
+                },
+
+                // adding (below pipeline - first elemnt of arrry )
+                {
+                  $addFields: {
+                    owner: {
+                      $first: "$owner",
+                    },
+                  },
+                },
+                // end -
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ]);
+  // end of aggregration-->
+
+  return res
+    .status(200)
+    .json(200, user[0].getWatchHistory, "Watch_History fetched successfully");
+});
+// end of  getWatchHistory--
+
 export {
   registerUser,
   userLogin,
@@ -421,4 +475,6 @@ export {
   updateUserProfilePhoto,
   updateUserCoverImage,
   getCurrentUse,
+  getUserChannelProfile,
+  getWatchHistory,
 };
