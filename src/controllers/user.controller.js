@@ -141,8 +141,8 @@ const userLogout = asyncHandler(async (req, res) => {
   User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: {
-        refreshToken: undefined,
+      $unset: {
+        refreshToken: 1,
       },
     },
     {
@@ -215,7 +215,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 // end of RefreshAccessToken
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
-  console.log("Request Body->", req.body);
+  //console.log("Request Body->", req.body);
 
   const { oldPassword, newPassword } = req.body;
 
@@ -265,7 +265,7 @@ const updateUserAccountDetails = asyncHandler(async (req, res) => {
 // end of UpdateUser Details--->
 
 const updateUserProfilePhoto = asyncHandler(async (req, res) => {
-  const photoLocalPath = req.file?.path;
+  console.log("The file is empty or  not", req.file);
 
   if (!photoLocalPath) {
     throw new ApiError(400, "Image Could not Found");
@@ -461,7 +461,13 @@ const getWatchHistory = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(200, user[0].getWatchHistory, "Watch_History fetched successfully");
+    .json(
+      new ApiResponse(
+        200,
+        user[0].watchHistory,
+        "Watch history fetched successfully"
+      )
+    );
 });
 // end of  getWatchHistory--
 
