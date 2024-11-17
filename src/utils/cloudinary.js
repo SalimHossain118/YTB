@@ -1,4 +1,5 @@
 import { v2 as cloudinary } from "cloudinary";
+import { log } from "console";
 import fs from "fs";
 
 cloudinary.config({
@@ -23,4 +24,36 @@ const uploadOnCloudinary = async (localFilePath) => {
   }
 };
 
-export { uploadOnCloudinary };
+// end of upload-->
+
+const deleteFromCloudinary = async (url) => {
+  try {
+    // to do-->
+    // fisrt find the publicId-
+    // 2nd get the file type-->
+
+    const publicId = url.split("/").pop().split(".")[0];
+    console.log("Public_ID:", publicId);
+    const fileType = url.split(".").pop();
+    console.log("File_Type:", fileType);
+
+    let resourceType;
+    if (fileType === "mp4" || fileType === "mov" || fileType === "avi") {
+      resourceType = "video";
+    } else {
+      resourceType = "image";
+    }
+
+    const deletedResult = await cloudinary.uploader.destroy(publicId, {
+      type: "upload",
+      resource_type: resourceType,
+    });
+    console.log("Cloudinary response for delete:", deletedResult);
+    return deletedResult;
+  } catch (error) {
+    console.log("Some Thing Went worng While Deleting from Cloudinary");
+    return null;
+  }
+};
+
+export { uploadOnCloudinary, deleteFromCloudinary };
